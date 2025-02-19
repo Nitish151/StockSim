@@ -35,7 +35,7 @@ public class StockPriceProducer {
     private static final String API_HOST = "yahoo-finance15.p.rapidapi.com";
     private static final String API_KEY = "0086b8c5f0msh01319a52ee632cfp159702jsn7718a5462c76"; // Replace with actual API key
 
-    @Scheduled(fixedRate = 60000) // Runs every 60 seconds
+    @Scheduled(fixedRate = 1000000) // Runs every 5 minutes
     public void fetchAndSendStockPrice() {
         log.info("🚀 Scheduled Task: Fetching stock prices...");
 

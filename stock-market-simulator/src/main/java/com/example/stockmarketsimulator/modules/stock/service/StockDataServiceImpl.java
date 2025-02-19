@@ -1,5 +1,6 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,14 +26,14 @@ public class StockDataServiceImpl implements StockDataService {
     private static final String STOCK_CACHE_PREFIX = "stock:";
     private static final String API_URL = "https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes?ticker=";
     private static final String API_HOST = "yahoo-finance15.p.rapidapi.com";
-    private static final String API_KEY = "0086b8c5f0msh01319a52ee632cfp159702jsn7718a5462c76"; // Replace with actual API key
+    private static final String API_KEY = "+"; // Replace with actual API key
 
     @Override
-    public Stock fetchStockData(String symbol) {
+    public StockDto fetchStockData(String symbol) {
         String cacheKey = STOCK_CACHE_PREFIX + symbol;
 
         // 1️⃣ Check if stock data is cached
-        Stock cachedStock = (Stock) redisTemplate.opsForValue().get(cacheKey);
+        StockDto cachedStock = (StockDto) redisTemplate.opsForValue().get(cacheKey);
         if (cachedStock != null) {
             log.info("✅ Returning cached data for {}", symbol);
             return cachedStock;
@@ -66,30 +67,61 @@ public class StockDataServiceImpl implements StockDataService {
 
             JsonNode stockNode = bodyNode.get(0);
 
-            // 5️⃣ Map to Stock model
-            Stock stock = Stock.builder()
+            // 5️⃣ Map to StockDto
+            StockDto stockDto = StockDto.builder()
                     .symbol(stockNode.path("symbol").asText())
-                    .companyName(stockNode.path("shortName").asText("N/A"))
-                    .industry(stockNode.path("industry").asText("Unknown"))
-                    .currentPrice(getBigDecimal(stockNode, "regularMarketPrice"))
-                    .openingPrice(getBigDecimal(stockNode, "regularMarketOpen"))
-                    .previousClose(getBigDecimal(stockNode, "regularMarketPreviousClose"))
-                    .volume(stockNode.path("regularMarketVolume").asLong(0L))
+                    .shortName(stockNode.path("shortName").asText("N/A"))
+                    .longName(stockNode.path("longName").asText("N/A"))
+                    .exchange(stockNode.path("fullExchangeName").asText("Unknown"))
+                    .marketState(stockNode.path("marketState").asText("Unknown"))
+                    .regularMarketPrice(getBigDecimal(stockNode, "regularMarketPrice"))
+                    .regularMarketChange(getBigDecimal(stockNode, "regularMarketChange"))
+                    .regularMarketChangePercent(getBigDecimal(stockNode, "regularMarketChangePercent"))
+                    .regularMarketPreviousClose(getBigDecimal(stockNode, "regularMarketPreviousClose"))
+                    .regularMarketOpen(getBigDecimal(stockNode, "regularMarketOpen"))
+                    .regularMarketDayHigh(getBigDecimal(stockNode, "regularMarketDayHigh"))
+                    .regularMarketDayLow(getBigDecimal(stockNode, "regularMarketDayLow"))
+                    .regularMarketVolume(stockNode.path("regularMarketVolume").asLong(0L))
                     .marketCap(getBigDecimal(stockNode, "marketCap"))
-                    .priceChange(getBigDecimal(stockNode, "regularMarketChange"))
-                    .percentageChange(getBigDecimal(stockNode, "regularMarketChangePercent"))
+                    .fiftyTwoWeekRange(stockNode.path("fiftyTwoWeekRange").asText())
+                    .fiftyTwoWeekHigh(getBigDecimal(stockNode, "fiftyTwoWeekHigh"))
+                    .fiftyTwoWeekLow(getBigDecimal(stockNode, "fiftyTwoWeekLow"))
+                    .fiftyTwoWeekHighChangePercent(getBigDecimal(stockNode, "fiftyTwoWeekHighChangePercent"))
+                    .fiftyDayAverage(getBigDecimal(stockNode, "fiftyDayAverage"))
+                    .twoHundredDayAverage(getBigDecimal(stockNode, "twoHundredDayAverage"))
+                    .trailingPE(getBigDecimal(stockNode, "trailingPE"))
+                    .forwardPE(getBigDecimal(stockNode, "forwardPE"))
+                    .epsTrailingTwelveMonths(getBigDecimal(stockNode, "epsTrailingTwelveMonths"))
+                    .dividendYield(getBigDecimal(stockNode, "dividendYield"))
+                    .priceToBook(getBigDecimal(stockNode, "priceToBook"))
+                    .lastUpdated(LocalDateTime.now())
+                    .build();
+
+            Stock stock = Stock.builder()
+                    .symbol(stockDto.getSymbol())
+                    .companyName(stockDto.getLongName()) // Mapping long name to companyName
+                    .industry("N/A") // Not provided in API, placeholder
+                    .currentPrice(stockDto.getRegularMarketPrice())
+                    .openingPrice(stockDto.getRegularMarketOpen())
+                    .previousClose(stockDto.getRegularMarketPreviousClose())
+                    .volume(stockDto.getRegularMarketVolume())
+                    .marketCap(stockDto.getMarketCap())
+                    .priceChange(stockDto.getRegularMarketChange())
+                    .percentageChange(stockDto.getRegularMarketChangePercent())
                     .lastUpdated(LocalDateTime.now())
                     .build();
 
             // 6️⃣ Cache data
-            redisTemplate.opsForValue().set(cacheKey, stock, 1, TimeUnit.MINUTES);
-            log.info("📥 Cached stock data for {} with 1-minute expiry", symbol);
+            redisTemplate.opsForValue().set(cacheKey, stockDto, 100, TimeUnit.MINUTES);
+            log.info("📥 Cached stock data for {} with 100-minute expiry", symbol);
 
-            return stock;
+            return stockDto;
         } catch (Exception e) {
             log.error("🚨 Error parsing stock data for {}: {}", symbol, e.getMessage(), e);
             throw new RuntimeException("Failed to parse stock data", e);
         }
+
+
     }
 
     private BigDecimal getBigDecimal(JsonNode node, String field) {

@@ -1,5 +1,7 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
+import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
 public class StockTrackingServiceImpl implements StockTrackingService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final StockStorageService stockStorageService;
+    private final StockDataService stockDataService;
 
     // Key format for per-user tracked stocks, e.g., user:stocks:A123
     private static final String USER_TRACK_KEY = "user:stocks:%s";
@@ -27,13 +31,13 @@ public class StockTrackingServiceImpl implements StockTrackingService {
      * Sets an expiry of 10 minutes on the per-user set.
      */
     @Override
-    public void trackStock(String userId, String symbol) {
-        String userKey = String.format(USER_TRACK_KEY, userId);
+    public void trackStock(String username, String symbol) {
+        String userKey = String.format(USER_TRACK_KEY, username);
         redisTemplate.opsForSet().add(userKey, symbol);
-        redisTemplate.expire(userKey, Duration.ofMinutes(5));
+        redisTemplate.expire(userKey, Duration.ofMinutes(100));
         redisTemplate.opsForSet().add(GLOBAL_TRACK_KEY, symbol);
-        redisTemplate.expire(GLOBAL_TRACK_KEY, Duration.ofMinutes(8));
-        log.info("📌 User {} is now tracking stock: {}", userId, symbol);
+        redisTemplate.expire(GLOBAL_TRACK_KEY, Duration.ofMinutes(100));
+        log.info("📌 User {} is now tracking stock: {}", username, symbol);
     }
 
     /**
@@ -41,22 +45,22 @@ public class StockTrackingServiceImpl implements StockTrackingService {
      * If no user is tracking the symbol, it also removes it from the global set.
      */
     @Override
-    public void untrackStock(String userId, String symbol) {
-        String userKey = String.format(USER_TRACK_KEY, userId);
+    public void untrackStock(String username, String symbol) {
+        String userKey = String.format(USER_TRACK_KEY, username);
         redisTemplate.opsForSet().remove(userKey, symbol);
         if (isStockUntracked(symbol)) {
             redisTemplate.opsForSet().remove(GLOBAL_TRACK_KEY, symbol);
             log.info("🗑️ {} removed from global tracking (no user is tracking it)", symbol);
         }
-        log.info("❌ User {} stopped tracking stock: {}", userId, symbol);
+        log.info("❌ User {} stopped tracking stock: {}", username, symbol);
     }
 
     /**
      * Returns the set of stock symbols tracked by the specified user.
      */
     @Override
-    public Set<String> getUserTrackedStocks(String userId) {
-        String userKey = String.format(USER_TRACK_KEY, userId);
+    public Set<String> getUserTrackedStocks(String username) {
+        String userKey = String.format(USER_TRACK_KEY, username);
         Set<Object> stocks = redisTemplate.opsForSet().members(userKey);
         return stocks != null ? stocks.stream().map(Object::toString).collect(Collectors.toSet()) : new HashSet<>();
     }
@@ -81,4 +85,29 @@ public class StockTrackingServiceImpl implements StockTrackingService {
         }
         return keys.stream().noneMatch(key -> Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(key, symbol)));
     }
+
+    @Override
+    public Stock fetchAndStoreStock(String symbol) {
+        // 1️⃣ Fetch stock data from API
+        StockDto stockDto = stockDataService.fetchStockData(symbol);
+
+        // 2️⃣ Convert DTO to Stock entity
+        Stock stock = Stock.builder()
+                .symbol(stockDto.getSymbol())
+                .companyName(stockDto.getLongName()) // Assuming longName maps to companyName
+                .industry("N/A") // Placeholder (not available in API)
+                .currentPrice(stockDto.getRegularMarketPrice())
+                .openingPrice(stockDto.getRegularMarketOpen())
+                .previousClose(stockDto.getRegularMarketPreviousClose())
+                .volume(stockDto.getRegularMarketVolume())
+                .marketCap(stockDto.getMarketCap())
+                .priceChange(stockDto.getRegularMarketChange())
+                .percentageChange(stockDto.getRegularMarketChangePercent())
+                .lastUpdated(stockDto.getLastUpdated())
+                .build();
+
+        // 3️⃣ Save to database
+        return stockStorageService.saveOrUpdateStock(stock);
+    }
+
 }

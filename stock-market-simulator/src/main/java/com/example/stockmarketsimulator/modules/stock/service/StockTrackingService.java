@@ -1,5 +1,7 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.model.Stock;
+
 import java.util.Set;
 
 public interface StockTrackingService {
@@ -12,4 +14,6 @@ public interface StockTrackingService {
     Set<String> getAllTrackedStocks();
 
     boolean isStockUntracked(String symbol);
+
+    Stock fetchAndStoreStock(String symbol);
 }

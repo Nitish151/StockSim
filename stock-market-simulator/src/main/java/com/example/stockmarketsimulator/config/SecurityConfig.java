@@ -5,6 +5,7 @@ import com.example.stockmarketsimulator.modules.user.security.CustomUserDetailsS
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -27,12 +28,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .cors().and()
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for JWT-based APIs
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No sessions
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/stocks/**", "/api/tracking/**").permitAll() // Public endpoints
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Explicitly allow OPTIONS requests
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/stocks/**").permitAll() // Public endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/user/**", "/api/tracking/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated() // Secure all other endpoints
                 )
                 .authenticationProvider(authenticationProvider()) // Use our authentication provider

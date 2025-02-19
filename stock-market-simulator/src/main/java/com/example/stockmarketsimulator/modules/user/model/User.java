@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import javax.management.relation.Role;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -23,6 +24,7 @@ public class User {
 
     @NotBlank(message = "Username cannot be blank")
     @Size(min = 3, max = 50, message = "Name must be between 3 and 50 characters")
+    @Pattern(regexp = "^\\S+$", message = "Username cannot contain spaces")
     @Column(nullable = false, unique = true)
     private String username;
 
@@ -34,6 +36,9 @@ public class User {
     @Email(message = "Invalid email format")
     @Column(unique = true)
     private String email;
+
+    @Column
+    private BigDecimal balance = BigDecimal.valueOf(0.0);
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)

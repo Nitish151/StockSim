@@ -48,7 +48,7 @@ public class JwtUtil {
         log.info("✅ Extracted roles for token: {}", roles); // Debugging log
 
         claims.put("roles", roles); // Add roles to JWT
-        log.debug("Roles added to token: {}", roles);
+        log.info("Roles added to token: {}", roles);
 
         String token = Jwts.builder()
                 .setClaims(claims)

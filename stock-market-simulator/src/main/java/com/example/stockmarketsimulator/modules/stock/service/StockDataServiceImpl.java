@@ -2,6 +2,7 @@ package com.example.stockmarketsimulator.modules.stock.service;
 
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
+import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -22,6 +24,7 @@ public class StockDataServiceImpl implements StockDataService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final StockRepository stockRepository; // Inject StockRepository
 
     private static final String STOCK_CACHE_PREFIX = "stock:";
     private static final String API_URL = "https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes?ticker=";
@@ -97,6 +100,43 @@ public class StockDataServiceImpl implements StockDataService {
                     .lastUpdated(LocalDateTime.now())
                     .build();
 
+            saveOrUpdateStock(stockDto);
+
+            // 8️⃣ Cache data
+            redisTemplate.opsForValue().set(cacheKey, stockDto, 100, TimeUnit.MINUTES);
+            log.info("📥 Cached stock data for {} with 100-minute expiry", symbol);
+
+            return stockDto;
+        } catch (Exception e) {
+            log.error("🚨 Error parsing stock data for {}: {}", symbol, e.getMessage(), e);
+            throw new RuntimeException("Failed to parse stock data", e);
+        }
+    }
+
+    private void saveOrUpdateStock(StockDto stockDto) {
+        // Check if the stock already exists in the database
+
+        Optional<Stock> existingStock = stockRepository.findBySymbol(stockDto.getSymbol());
+
+        if (existingStock.isPresent()) {
+            // Update the existing stock
+
+            Stock updatedStock = existingStock.get();
+            updatedStock.setCompanyName(stockDto.getLongName());
+            updatedStock.setIndustry("N/A"); // Not provided in API, placeholder
+            updatedStock.setCurrentPrice(stockDto.getRegularMarketPrice());
+            updatedStock.setOpeningPrice(stockDto.getRegularMarketOpen());
+            updatedStock.setPreviousClose(stockDto.getRegularMarketPreviousClose());
+            updatedStock.setVolume(stockDto.getRegularMarketVolume());
+            updatedStock.setMarketCap(stockDto.getMarketCap());
+            updatedStock.setPriceChange(stockDto.getRegularMarketChange());
+            updatedStock.setPercentageChange(stockDto.getRegularMarketChangePercent());
+            updatedStock.setLastUpdated(LocalDateTime.now());
+
+            stockRepository.save(updatedStock);
+            log.info("🔄 Updated stock in database: {}", updatedStock.getSymbol());
+        } else {
+            // Save the new stock
             Stock stock = Stock.builder()
                     .symbol(stockDto.getSymbol())
                     .companyName(stockDto.getLongName()) // Mapping long name to companyName
@@ -110,18 +150,9 @@ public class StockDataServiceImpl implements StockDataService {
                     .percentageChange(stockDto.getRegularMarketChangePercent())
                     .lastUpdated(LocalDateTime.now())
                     .build();
-
-            // 6️⃣ Cache data
-            redisTemplate.opsForValue().set(cacheKey, stockDto, 100, TimeUnit.MINUTES);
-            log.info("📥 Cached stock data for {} with 100-minute expiry", symbol);
-
-            return stockDto;
-        } catch (Exception e) {
-            log.error("🚨 Error parsing stock data for {}: {}", symbol, e.getMessage(), e);
-            throw new RuntimeException("Failed to parse stock data", e);
+            stockRepository.save(stock);
+            log.info("✅ Saved new stock to database: {}", stock.getSymbol());
         }
-
-
     }
 
     private BigDecimal getBigDecimal(JsonNode node, String field) {

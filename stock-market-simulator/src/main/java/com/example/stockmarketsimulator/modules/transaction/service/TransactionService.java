@@ -38,6 +38,7 @@ public class TransactionService {
                     return new EntityNotFoundException("User not found");
                 });
 
+        // Fetch and save/update the stock
         Stock stock = stockStorageService.findStockBySymbol(stockSymbol);
 
         BigDecimal totalCost = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
@@ -53,7 +54,7 @@ public class TransactionService {
 
         Transaction transaction = new Transaction();
         transaction.setUser(user);
-        transaction.setStock(stock);
+        transaction.setStock(stock); // Stock is now in a persistent state
         transaction.setType(TransactionType.BUY);
         transaction.setPrice(stock.getCurrentPrice());
         transaction.setTotalPrice(totalCost);
@@ -63,7 +64,7 @@ public class TransactionService {
         transactionRepository.save(transaction);
         log.info("Transaction saved: User {} bought {} shares of {}", userId, quantity, stockSymbol);
 
-        portfolioService.updatePortfolio(user, stock, quantity);
+        portfolioService.updatePortfolio(user, stock, quantity, stock.getCurrentPrice());
         log.info("Portfolio updated for user {}", userId);
 
         return transaction;
@@ -101,7 +102,7 @@ public class TransactionService {
         transactionRepository.save(transaction);
         log.info("Transaction saved: User {} sold {} shares of {}", userId, quantity, stockSymbol);
 
-        portfolioService.updatePortfolio(user, stock, quantity);
+        portfolioService.updatePortfolio(user, stock, quantity, stock.getCurrentPrice());
         log.info("Portfolio updated for user {}", userId);
 
         return transaction;

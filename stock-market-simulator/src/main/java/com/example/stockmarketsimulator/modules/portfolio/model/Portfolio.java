@@ -7,6 +7,8 @@ import lombok.*;
 import org.springframework.boot.autoconfigure.batch.BatchTransactionManager;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name="portfolios")
 @Getter
@@ -28,5 +30,5 @@ public class Portfolio {
     private Stock stock;
 
     private int quantity;
-
+    private BigDecimal avgBuyPrice = BigDecimal.ZERO;
 }

@@ -4,12 +4,15 @@ import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-@Component
+@Service
 @RequiredArgsConstructor
+@Slf4j
 public class StockStorageService {
     private final StockRepository stockRepository;
     private final StockDataService stockDataService;
@@ -33,9 +36,8 @@ public class StockStorageService {
                 .lastUpdated(stockDto.getLastUpdated())
                 .build();
 
-        saveOrUpdateStock(stock);
-
-        return stock;
+        // Save or update the stock in the database
+        return saveOrUpdateStock(stock);
     }
 
     public Stock saveOrUpdateStock(Stock stock) {

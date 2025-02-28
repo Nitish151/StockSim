@@ -1,6 +1,8 @@
 package com.example.stockmarketsimulator.modules.stock.kafka;
 
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
+import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
+import com.example.stockmarketsimulator.modules.stock.service.StockDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class StockPriceConsumer {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final StockDataService stockDataService; // Inject StockRepository
     private static final String STOCK_CACHE_PREFIX = "stock:";
     private static final Duration STOCK_TTL = Duration.ofMinutes(100); // Expiry time
 
@@ -64,6 +67,8 @@ public class StockPriceConsumer {
                     .priceToBook(parseBigDecimal(data.get("priceToBook")))
                     .lastUpdated(LocalDateTime.now())
                     .build();
+
+
 
             redisTemplate.opsForValue().set(STOCK_CACHE_PREFIX + symbol, stockDto, STOCK_TTL);
             log.info("✅ Updated stock price in Redis for 100 minutes for: {}", symbol);

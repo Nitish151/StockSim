@@ -4,7 +4,6 @@ import com.example.stockmarketsimulator.modules.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
@@ -21,4 +20,5 @@ public interface UserService {
     Optional<User> searchUserByEmail(String email);
     Optional<User> searchUserByUsername(String email);
 
+    Optional<User> searchUserByUsernameOrEmail(String usernameOrEmail);
 }

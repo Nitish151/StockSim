@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@RequiredArgsConstructor
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +31,7 @@ public class Transaction {
     private TransactionType type; // BUY or SELL
 
     private BigDecimal price; // Price at which transaction happened
+    private BigDecimal totalPrice = BigDecimal.valueOf(0.0); // Total price of the transaction
     private int quantity; // Number of stocks traded
     private LocalDateTime timestamp = LocalDateTime.now(); // Time of transaction
 

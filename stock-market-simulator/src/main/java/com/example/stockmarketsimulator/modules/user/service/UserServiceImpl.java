@@ -11,8 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -116,4 +114,7 @@ public class UserServiceImpl implements UserService{
     public Optional<User> searchUserByUsername(String email) {
         return userRepository.findByUsername(email);
     }
+
+    @Override
+    public Optional<User> searchUserByUsernameOrEmail(String usernameOrEmail) {return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail);}
 }

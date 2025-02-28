@@ -1,14 +1,42 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+@Component
 @RequiredArgsConstructor
 public class StockStorageService {
     private final StockRepository stockRepository;
+    private final StockDataService stockDataService;
+
+    public Stock findStockBySymbol(String symbol) {
+        // Fetch stock data from the external service
+        StockDto stockDto = stockDataService.fetchStockData(symbol);
+
+        // Map StockDto to Stock entity
+        Stock stock = Stock.builder()
+                .symbol(stockDto.getSymbol())
+                .companyName(stockDto.getLongName()) // Use longName as companyName
+                .industry("Unknown") // Set a default or fetch from another source
+                .currentPrice(stockDto.getRegularMarketPrice())
+                .openingPrice(stockDto.getRegularMarketOpen())
+                .previousClose(stockDto.getRegularMarketPreviousClose())
+                .volume(stockDto.getRegularMarketVolume())
+                .marketCap(stockDto.getMarketCap())
+                .priceChange(stockDto.getRegularMarketChange())
+                .percentageChange(stockDto.getRegularMarketChangePercent())
+                .lastUpdated(stockDto.getLastUpdated())
+                .build();
+
+        saveOrUpdateStock(stock);
+
+        return stock;
+    }
 
     public Stock saveOrUpdateStock(Stock stock) {
         return stockRepository.findBySymbol(stock.getSymbol())

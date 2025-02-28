@@ -3,6 +3,7 @@ package com.example.stockmarketsimulator.modules.user.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.management.relation.Role;
 import java.math.BigDecimal;

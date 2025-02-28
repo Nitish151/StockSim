@@ -26,7 +26,7 @@ public class StockDataServiceImpl implements StockDataService {
     private static final String STOCK_CACHE_PREFIX = "stock:";
     private static final String API_URL = "https://yahoo-finance15.p.rapidapi.com/api/v1/markets/stock/quotes?ticker=";
     private static final String API_HOST = "yahoo-finance15.p.rapidapi.com";
-    private static final String API_KEY = "+"; // Replace with actual API key
+    private static final String API_KEY = "0086b8c5f0msh01319a52ee632cfp159702jsn7718a5462c76"; // Replace with actual API key
 
     @Override
     public StockDto fetchStockData(String symbol) {

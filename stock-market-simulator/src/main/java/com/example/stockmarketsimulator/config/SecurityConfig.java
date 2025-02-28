@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No sessions
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Explicitly allow OPTIONS requests
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/stocks/**").permitAll() // Public endpoints
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/stocks/**", "api/transactions/**").permitAll() // Public endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**", "/api/tracking/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated() // Secure all other endpoints

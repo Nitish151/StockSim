@@ -1,9 +1,7 @@
 package com.example.stockmarketsimulator.modules.stock.controller;
 
-import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
-import com.example.stockmarketsimulator.modules.stock.model.Stock;
-import com.example.stockmarketsimulator.modules.stock.service.StockPersistenceService;
+import com.example.stockmarketsimulator.modules.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,16 +13,12 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class StockDataController {
 
-    private final StockPersistenceService stockPersistenceService;
-    private final StockMapper stockMapper;
+    private final StockService stockService;
 
     @GetMapping("/{symbol}")
     public ResponseEntity<StockDto> getStock(@PathVariable String symbol) {
         log.info("Fetching stock data for symbol: {}", symbol);
-        // Retrieve (and persist/update) the stock data using the new service
-        Stock stock = stockPersistenceService.findAndPersistStock(symbol);
-        // Convert the entity to DTO for the API response
-        StockDto stockDto = stockMapper.toStockDto(stock);
+        StockDto stockDto = stockService.getStockData(symbol);
         return ResponseEntity.ok(stockDto);
     }
 }

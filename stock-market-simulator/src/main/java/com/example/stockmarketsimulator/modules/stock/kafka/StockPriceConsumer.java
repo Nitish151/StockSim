@@ -22,9 +22,9 @@ public class StockPriceConsumer {
             // Convert JSON message into a StockDto
             StockDto stockDto = objectMapper.readValue(message, StockDto.class);
             stockCacheService.cacheStock(stockDto.getSymbol(), stockDto);
-            log.info("📥 Updated cache with stock data for: {}", stockDto.getSymbol());
+            log.info("Updated cache with stock data for: {}", stockDto.getSymbol());
         } catch (Exception e) {
-            log.error("❌ Error processing Kafka message: {}", e.getMessage(), e);
+            log.error("Error processing Kafka message: {}", e.getMessage(), e);
         }
     }
 }

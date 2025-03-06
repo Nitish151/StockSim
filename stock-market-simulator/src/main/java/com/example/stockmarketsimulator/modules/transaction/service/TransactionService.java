@@ -3,7 +3,7 @@ package com.example.stockmarketsimulator.modules.transaction.service;
 import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
 import com.example.stockmarketsimulator.modules.portfolio.service.PortfolioService;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
-import com.example.stockmarketsimulator.modules.stock.service.StockStorageService;
+import com.example.stockmarketsimulator.modules.stock.service.StockService;
 import com.example.stockmarketsimulator.modules.transaction.dto.TransactionResponse;
 import com.example.stockmarketsimulator.modules.transaction.model.Transaction;
 import com.example.stockmarketsimulator.modules.transaction.model.Transaction.TransactionType;
@@ -26,7 +26,7 @@ import java.util.List;
 public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
-    private final StockStorageService stockStorageService;
+    private final StockService stockService;
     private final PortfolioService portfolioService;
 
     @Transactional
@@ -39,8 +39,8 @@ public class TransactionService {
                     return new EntityNotFoundException("User not found");
                 });
 
-        // Fetch and save/update the stock
-        Stock stock = stockStorageService.findStockBySymbol(stockSymbol);
+        // Fetch and persist the stock using the new StockService
+        Stock stock = stockService.getAndPersistStock(stockSymbol);
 
         BigDecimal totalCost = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
 
@@ -55,7 +55,7 @@ public class TransactionService {
 
         Transaction transaction = new Transaction();
         transaction.setUser(user);
-        transaction.setStock(stock); // Stock is now in a persistent state
+        transaction.setStock(stock);
         transaction.setType(TransactionType.BUY);
         transaction.setPrice(stock.getCurrentPrice());
         transaction.setTotalPrice(totalCost);
@@ -81,14 +81,20 @@ public class TransactionService {
                     return new EntityNotFoundException("User not found");
                 });
 
-        Stock stock = stockStorageService.findStockBySymbol(stockSymbol);
+        // Fetch and persist the stock using the new StockService
+        Stock stock = stockService.getAndPersistStock(stockSymbol);
 
-        // TODO: Check if user has the stock and enough quantity after doing portfolio module
         Portfolio portfolio = portfolioService.findByUserAndStock(user, stock)
                 .orElseThrow(() -> {
                     log.error("User {} does not own stock {}", userId, stockSymbol);
                     return new IllegalArgumentException("User does not own this stock");
                 });
+
+        if (portfolio.getQuantity() < quantity) {
+            log.error("Insufficient shares: User {} has {} shares of {}, trying to sell {}",
+                    userId, portfolio.getQuantity(), stockSymbol, quantity);
+            throw new IllegalArgumentException("Insufficient shares to sell");
+        }
 
         BigDecimal totalEarnings = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
 
@@ -117,8 +123,8 @@ public class TransactionService {
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
         return TransactionResponse.builder()
                 .id(transaction.getId())
-                .stockSymbol(transaction.getStock().getSymbol()) // Only the stock symbol
-                .companyName(transaction.getStock().getCompanyName()) // Only the company name
+                .stockSymbol(transaction.getStock().getSymbol())
+                .companyName(transaction.getStock().getCompanyName())
                 .type(transaction.getType())
                 .price(transaction.getPrice())
                 .totalPrice(transaction.getTotalPrice())

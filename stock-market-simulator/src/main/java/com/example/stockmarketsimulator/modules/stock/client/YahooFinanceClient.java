@@ -20,7 +20,6 @@ public class YahooFinanceClient {
     private final ObjectMapper objectMapper;
     private final StockMapper stockMapper;
 
-    // Inject API configuration from application.properties or application.yml
     @Value("${yahoo.api.url}")
     private String apiUrl;
 

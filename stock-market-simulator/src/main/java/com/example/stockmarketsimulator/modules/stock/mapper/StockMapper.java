@@ -45,18 +45,17 @@ public class StockMapper {
     public StockDto toStockDto(Stock stock) {
         return StockDto.builder()
                 .symbol(stock.getSymbol())
-                .shortName("") // Populate as needed
+                .shortName(stock.getCompanyName())
                 .longName(stock.getCompanyName())
-                .exchange("Unknown") // Default value; adjust if available
-                .marketState("Unknown") // Default value
+                .exchange("Unknown")
+                .marketState("Unknown")
                 .regularMarketPrice(stock.getCurrentPrice())
                 .regularMarketOpen(stock.getOpeningPrice())
                 .regularMarketPreviousClose(stock.getPreviousClose())
                 .regularMarketVolume(stock.getVolume())
                 .marketCap(stock.getMarketCap())
-                // For fields not persisted, you can assign default values
-                .regularMarketChange(BigDecimal.ZERO)
-                .regularMarketChangePercent(BigDecimal.ZERO)
+                .regularMarketChange(stock.getPriceChange())
+                .regularMarketChangePercent(stock.getPercentageChange())
                 .fiftyTwoWeekRange("N/A")
                 .fiftyTwoWeekHigh(BigDecimal.ZERO)
                 .fiftyTwoWeekLow(BigDecimal.ZERO)
@@ -87,7 +86,6 @@ public class StockMapper {
                 .lastUpdated(dto.getLastUpdated())
                 .build();
     }
-
 
     private BigDecimal getBigDecimal(JsonNode node, String field) {
         return node.has(field) && node.get(field).isNumber()

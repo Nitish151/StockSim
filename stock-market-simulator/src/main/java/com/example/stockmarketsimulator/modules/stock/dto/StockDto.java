@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-@NoArgsConstructor  // 🔥 Required for Jackson
-@AllArgsConstructor // 🔥 Ensures the builder works
+@NoArgsConstructor
+@AllArgsConstructor
 public class StockDto {
     private String symbol;
     private String shortName;

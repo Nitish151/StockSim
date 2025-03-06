@@ -1,18 +1,18 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
-import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+public interface StockService {
+    /**
+     * Fetches stock data for the given symbol.
+     * Uses cache if available, otherwise fetches from the external API.
+     */
+    StockDto getStockData(String symbol);
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class StockService {
+    /**
+     * Fetches stock data and ensures it's persisted in the database.
+     * Returns the persisted entity.
+     */
+    Stock getAndPersistStock(String symbol);
 }

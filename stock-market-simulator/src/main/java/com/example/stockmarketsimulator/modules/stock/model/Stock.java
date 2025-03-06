@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Data
 public class Stock {
 
     @Id
@@ -25,26 +24,26 @@ public class Stock {
 
     @NotBlank(message = "Stock symbol cannot be blank")
     @Column(unique = true, nullable = false, updatable = false)
-    private String symbol;  // Example: AAPL, TSLA
+    private String symbol;
 
     @NotBlank(message = "Company name cannot be blank")
-    private String companyName;  // Example: Apple Inc.
+    private String companyName;
 
     @NotBlank(message = "Industry cannot be blank")
-    private String industry;  // Example: Technology, Finance
+    private String industry;
 
     @NotNull(message = "Current price cannot be null")
-    private BigDecimal currentPrice;  // Example: 150.75
+    private BigDecimal currentPrice;
 
-    private BigDecimal openingPrice;   // Price at market open
-    private BigDecimal previousClose;  // Last trading day's close
+    private BigDecimal openingPrice;
+    private BigDecimal previousClose;
 
-    private Long volume;  // Number of shares traded
-    private BigDecimal marketCap; // Market capitalization
+    private Long volume;
+    private BigDecimal marketCap;
 
-    private BigDecimal priceChange;  // Price difference from previous close
-    private BigDecimal percentageChange;  // Percentage change from previous close
+    private BigDecimal priceChange;
+    private BigDecimal percentageChange;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime lastUpdated = LocalDateTime.now();  // Last market update
+    private LocalDateTime lastUpdated = LocalDateTime.now();
 }

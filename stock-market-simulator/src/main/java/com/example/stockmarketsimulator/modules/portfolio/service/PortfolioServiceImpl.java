@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -71,4 +72,9 @@ public class PortfolioServiceImpl implements PortfolioService{
             portfolioRepository.save(portfolio);
         }
     }
+
+    public Optional<Portfolio> findByUserAndStock(User user, Stock stock) {
+        return portfolioRepository.findByUserAndStock(user, stock);
+    }
+
 }

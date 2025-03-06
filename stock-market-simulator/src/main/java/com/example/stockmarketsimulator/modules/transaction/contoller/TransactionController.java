@@ -55,7 +55,7 @@ public class TransactionController {
         User user = userService.searchUserByUsernameOrEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        log.info("User {} is attempting to sell {} shares of {}", user.getId(), quantity, stockSymbol);
+        log.info("✅ User {} is attempting to sell {} shares of {}", user.getId(), quantity, stockSymbol);
 
         try {
             Transaction transaction = transactionService.sellStock(user.getId(), stockSymbol, quantity);

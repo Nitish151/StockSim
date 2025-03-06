@@ -1,17 +1,13 @@
 package com.example.stockmarketsimulator.modules.stock.controller;
 
+import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
-import com.example.stockmarketsimulator.modules.stock.service.StockDataService;
-import com.example.stockmarketsimulator.modules.stock.service.StockTrackingService;
+import com.example.stockmarketsimulator.modules.stock.service.StockPersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/stocks")
@@ -19,19 +15,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class StockDataController {
 
-    private final StockTrackingService stockTrackingService;
-    private final StockDataService stockDataService;
+    private final StockPersistenceService stockPersistenceService;
+    private final StockMapper stockMapper;
 
-
-
-    /**
-     * Endpoint to fetch stock from stock symbol.
-     * URL: GET /api/stocks/{symbol}
-     */
     @GetMapping("/{symbol}")
     public ResponseEntity<StockDto> getStock(@PathVariable String symbol) {
-        log.info("📊 Fetching stock %s", symbol);
-        StockDto stockDto = stockDataService.fetchStockData(symbol);
+        log.info("Fetching stock data for symbol: {}", symbol);
+        // Retrieve (and persist/update) the stock data using the new service
+        Stock stock = stockPersistenceService.findAndPersistStock(symbol);
+        // Convert the entity to DTO for the API response
+        StockDto stockDto = stockMapper.toStockDto(stock);
         return ResponseEntity.ok(stockDto);
     }
 }

@@ -30,6 +30,7 @@ public class PortfolioController {
     @GetMapping
     public ResponseEntity<List<PortfolioResponse>> getUserPortfolio(@AuthenticationPrincipal UserDetails userDetails) {
         // Fetch the user from the repository using the username
+        log.info("⬇️ Here");
         Optional<User> userOptional = userService.searchUserByUsername(userDetails.getUsername());
 
         // Check if the user exists

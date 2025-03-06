@@ -1,5 +1,6 @@
 package com.example.stockmarketsimulator.modules.transaction.service;
 
+import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
 import com.example.stockmarketsimulator.modules.portfolio.service.PortfolioService;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import com.example.stockmarketsimulator.modules.stock.service.StockStorageService;
@@ -83,6 +84,11 @@ public class TransactionService {
         Stock stock = stockStorageService.findStockBySymbol(stockSymbol);
 
         // TODO: Check if user has the stock and enough quantity after doing portfolio module
+        Portfolio portfolio = portfolioService.findByUserAndStock(user, stock)
+                .orElseThrow(() -> {
+                    log.error("User {} does not own stock {}", userId, stockSymbol);
+                    return new IllegalArgumentException("User does not own this stock");
+                });
 
         BigDecimal totalEarnings = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
 
@@ -102,7 +108,7 @@ public class TransactionService {
         transactionRepository.save(transaction);
         log.info("Transaction saved: User {} sold {} shares of {}", userId, quantity, stockSymbol);
 
-        portfolioService.updatePortfolio(user, stock, quantity, stock.getCurrentPrice());
+        portfolioService.updatePortfolio(user, stock, -quantity, stock.getCurrentPrice());
         log.info("Portfolio updated for user {}", userId);
 
         return transaction;

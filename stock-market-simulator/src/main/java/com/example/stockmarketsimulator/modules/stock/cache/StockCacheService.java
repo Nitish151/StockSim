@@ -1,5 +1,6 @@
-package com.example.stockmarketsimulator.cache;
+package com.example.stockmarketsimulator.modules.stock.cache;
 
+import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class StockCacheService {
 
     private static final String STOCK_CACHE_PREFIX = "stock:";
+    private static final String SEARCH_CACHE_PREFIX = "search";
     private static final long CACHE_TTL_MINUTES = 100; // Cache expiry time in minutes
 
     private final RedisTemplate<String, Object> redisTemplate;
@@ -32,5 +34,22 @@ public class StockCacheService {
         String key = STOCK_CACHE_PREFIX + symbol;
         redisTemplate.opsForValue().set(key, stockDto, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
         log.info("Cached stock {} for {} minutes", symbol, CACHE_TTL_MINUTES);
+    }
+
+    public void cacheSearchStock(String stockName, SearchResponseDto response){
+        String key = SEARCH_CACHE_PREFIX + stockName;
+        redisTemplate.opsForValue().set(key, response, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        log.info("Cached search results {} for {} minutes", stockName, CACHE_TTL_MINUTES);
+    }
+
+    public SearchResponseDto getCachedSearchStock(String stockName){
+        String key = SEARCH_CACHE_PREFIX + stockName;
+        Object cached = redisTemplate.opsForValue().get(key);
+
+        if(cached != null) {
+            log.info("Returning cached data for stockSymbol: {}", stockName);
+            return (SearchResponseDto) cached;
+        }
+        return null;
     }
 }

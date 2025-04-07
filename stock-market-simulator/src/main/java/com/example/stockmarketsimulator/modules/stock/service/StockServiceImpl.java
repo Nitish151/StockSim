@@ -1,7 +1,8 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
-import com.example.stockmarketsimulator.cache.StockCacheService;
+import com.example.stockmarketsimulator.modules.stock.cache.StockCacheService;
 import com.example.stockmarketsimulator.modules.stock.client.YahooFinanceClient;
+import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
@@ -77,5 +78,27 @@ public class StockServiceImpl implements StockService {
         stock.setPriceChange(dto.getRegularMarketChange());
         stock.setPercentageChange(dto.getRegularMarketChangePercent());
         stock.setLastUpdated(LocalDateTime.now());
+    }
+
+    @Override
+    public SearchResponseDto searchStocksByName(String stockName){
+        SearchResponseDto cachedSearchResponse = stockCacheService.getCachedSearchStock(stockName);
+
+        if (cachedSearchResponse != null) {
+            log.info("Returning cached data for symbol: {}", stockName);
+            return cachedSearchResponse;
+        }
+
+        // If not cached, fetch from API
+        log.info("Cache miss for stcokName: {}. Fetching from API.", stockName);
+        SearchResponseDto searchResponseDto = yahooFinanceClient.searchStocks(stockName);
+
+        if(searchResponseDto == null){
+            log.info("No stocks for search string {}", stockName);
+        }
+        // Cache the fetched data
+        stockCacheService.cacheSearchStock(stockName, searchResponseDto);
+
+        return searchResponseDto;
     }
 }

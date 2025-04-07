@@ -1,5 +1,6 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
+import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 
@@ -15,4 +16,6 @@ public interface StockService {
      * Returns the persisted entity.
      */
     Stock getAndPersistStock(String symbol);
+    SearchResponseDto searchStocksByName(String stockName);
+
 }

@@ -1,7 +1,10 @@
 package com.example.stockmarketsimulator.modules.stock.client;
 
+import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
+import com.example.stockmarketsimulator.modules.stock.dto.StockInfo;
 import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,9 @@ public class YahooFinanceClient {
 
     @Value("${yahoo.api.url}")
     private String apiUrl;
+
+    @Value("${yahoo.api.url.search}")
+    private String apiUrlSearch;
 
     @Value("${yahoo.api.host}")
     private String apiHost;
@@ -55,5 +61,29 @@ public class YahooFinanceClient {
             log.error("Error parsing API response for symbol: {}", symbol, e);
             throw new RuntimeException("Error parsing API response", e);
         }
+    }
+
+    public SearchResponseDto searchStocks(String stockName){
+        String url = apiUrlSearch + stockName;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-rapidapi-host", apiHost);
+        headers.set("x-rapidapi-key", apiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+        if(response.getStatusCode() != HttpStatus.OK || response.getBody() == null){
+            log.error("API returned invalid response for symbol {}: ", stockName);
+            throw new RuntimeException("API returned invalid response");
+        }
+
+        try{
+
+            return objectMapper.readValue(response.getBody(), SearchResponseDto.class);
+        } catch (JsonProcessingException e){
+            log.error("Failed to parse API response for symbol {}: {}", stockName, e.getMessage());
+            throw new RuntimeException("Failed to parse API response", e);
+        }
+
     }
 }

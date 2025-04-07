@@ -1,5 +1,6 @@
 package com.example.stockmarketsimulator.modules.stock.controller;
 
+import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.service.StockService;
 import lombok.RequiredArgsConstructor;
@@ -20,5 +21,13 @@ public class StockDataController {
         log.info("Fetching stock data for symbol: {}", symbol);
         StockDto stockDto = stockService.getStockData(symbol);
         return ResponseEntity.ok(stockDto);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponseDto> searchStock(@RequestParam String stockName){
+        log.info("Searching for symbol: {}", stockName);
+        SearchResponseDto searchResponseDto = stockService.searchStocksByName(stockName);
+
+        return ResponseEntity.ok(searchResponseDto);
     }
 }

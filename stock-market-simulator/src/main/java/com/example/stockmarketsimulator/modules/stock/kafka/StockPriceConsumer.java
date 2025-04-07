@@ -1,6 +1,6 @@
 package com.example.stockmarketsimulator.modules.stock.kafka;
 
-import com.example.stockmarketsimulator.cache.StockCacheService;
+import com.example.stockmarketsimulator.modules.stock.cache.StockCacheService;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

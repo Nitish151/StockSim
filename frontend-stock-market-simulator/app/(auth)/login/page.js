@@ -22,7 +22,7 @@ const LoginPage = () => {
             console.log("User logged in successfully:", res);
             console.log("Token:", res.data.data.token);
             localStorage.setItem("token", res.data.data.token);
-            router.push("/dashboard");
+            router.push("/home");
           }
         })
         .catch((err) => {

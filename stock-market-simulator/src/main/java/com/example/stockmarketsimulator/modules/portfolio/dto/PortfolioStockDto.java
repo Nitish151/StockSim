@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PortfolioResponse {
+public class PortfolioStockDto {
     private Long id;
     private String stockSymbol; // Only the stock symbol
     private String companyName; // Only the company name

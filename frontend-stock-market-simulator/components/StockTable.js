@@ -1,33 +1,78 @@
-// Stock Table Component
-const StockTable = ({ stocks }) => (
-    <div className="rounded-lg border bg-white">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left">Symbol</th>
-              <th className="px-4 py-3 text-left">Company</th>
-              <th className="px-4 py-3 text-right">Price</th>
-              <th className="px-4 py-3 text-right">Change</th>
-              <th className="px-4 py-3 text-right">Volume</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stocks.map((stock) => (
-              <tr key={stock.symbol} className="border-t">
-                <td className="px-4 py-3 font-medium">{stock.symbol}</td>
-                <td className="px-4 py-3">{stock.companyName}</td>
-                <td className="px-4 py-3 text-right">${stock.currentPrice.toFixed(2)}</td>
-                <td className={`px-4 py-3 text-right ${stock.percentageChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {stock.percentageChange >= 0 ? '+' : ''}{stock.percentageChange.toFixed(2)}%
-                </td>
-                <td className="px-4 py-3 text-right">{stock.volume.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+// components/StockTable.jsx
+"use client";
 
-  export default StockTable;
+import { TrendingUp, TrendingDown, Star } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+const StockTable = ({ 
+  stocks, 
+  title, 
+  description, 
+  handleStockSelect, 
+  handleAddToWatchlist 
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Symbol</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Change</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stocks.map((stock) => (
+              <TableRow key={stock.symbol}>
+                <TableCell className="font-medium">{stock.symbol}</TableCell>
+                <TableCell>{stock.name}</TableCell>
+                <TableCell>${stock.price.toFixed(2)}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    {stock.change >= 0 ? (
+                      <TrendingUp size={16} className="text-green-600 mr-1" />
+                    ) : (
+                      <TrendingDown size={16} className="text-red-600 mr-1" />
+                    )}
+                    <span className={stock.change >= 0 ? "text-green-600" : "text-red-600"}>
+                      {stock.change >= 0 ? "+" : ""}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleStockSelect(stock.symbol)}
+                    >
+                      View
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleAddToWatchlist(stock.symbol)}
+                    >
+                      <Star size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default StockTable;

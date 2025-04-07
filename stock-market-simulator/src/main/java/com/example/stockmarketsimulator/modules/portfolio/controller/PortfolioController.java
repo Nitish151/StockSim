@@ -1,6 +1,7 @@
 package com.example.stockmarketsimulator.modules.portfolio.controller;
 
-import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioResponse;
+import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioStockDto;
+import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioSummaryDto;
 import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
 import com.example.stockmarketsimulator.modules.portfolio.service.PortfolioService;
 import com.example.stockmarketsimulator.modules.user.model.User;
@@ -28,7 +29,7 @@ public class PortfolioController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<PortfolioResponse>> getUserPortfolio(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<PortfolioSummaryDto> getUserPortfolio(@AuthenticationPrincipal UserDetails userDetails) {
         // Fetch the user from the repository using the username
         log.info("⬇️ Here");
         Optional<User> userOptional = userService.searchUserByUsername(userDetails.getUsername());

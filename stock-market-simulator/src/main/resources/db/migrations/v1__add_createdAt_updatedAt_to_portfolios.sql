@@ -1,0 +1,4 @@
+ALTER TABLE portfolios
+ADD COLUMN createdAt TIMESTAMP DEFAULT now(),
+ADD COLUMN updatedAt TIMESTAMP DEFAULT now();
+t

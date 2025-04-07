@@ -6,7 +6,7 @@ import { LineChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContain
 import Navbar from "@/components/Navbar";
 
 const Portfolio = () => {
-  const [stocks, setStocks] = useState([]);
+  const [stocks, setStocks] = useState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -30,9 +30,7 @@ const Portfolio = () => {
     fetchPortfolio();
   }, []);
 
-  const totalInvestment = stocks.reduce((sum, stock) => sum + stock.totalInvestment, 0);
-  const totalCurrentValue = stocks.reduce((sum, stock) => sum + stock.currentValue, 0);
-  const totalProfitLoss = stocks.reduce((sum, stock) => sum + stock.profitOrLoss, 0);
+  
 
   if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (error) return <div className="text-red-600 text-center">Error: {error}</div>;
@@ -52,16 +50,16 @@ const Portfolio = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 rounded-lg bg-blue-50">
                 <p className="text-sm text-gray-500">Total Investment</p>
-                <p className="text-2xl font-bold">${totalInvestment.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${stocks.totalInvested.toFixed(2)}</p>
               </div>
               <div className="p-4 rounded-lg bg-green-50">
                 <p className="text-sm text-gray-500">Current Value</p>
-                <p className="text-2xl font-bold">${totalCurrentValue.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${stocks.currentValue.toFixed(2)}</p>
               </div>
-              <div className={`p-4 rounded-lg ${totalProfitLoss >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div className={`p-4 rounded-lg ${stocks.totalProfitOrLoss >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
                 <p className="text-sm text-gray-500">Profit/Loss</p>
-                <p className={`text-2xl font-bold ${totalProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {totalProfitLoss >= 0 ? '+' : ''}${totalProfitLoss.toFixed(2)}
+                <p className={`text-2xl font-bold ${stocks.totalProfitOrLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {stocks.totalProfitOrLoss >= 0 ? '+' : ''}${stocks.totalProfitOrLoss.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -76,7 +74,7 @@ const Portfolio = () => {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stocks.map(stock => ({
+                <BarChart data={stocks.holdings.map(stock => ({
                   name: stock.stockSymbol,
                   value: stock.currentValue,
                   investment: stock.totalInvestment
@@ -115,7 +113,7 @@ const Portfolio = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {stocks.map((stock) => (
+                  {stocks.holdings.map((stock) => (
                     <tr key={stock.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

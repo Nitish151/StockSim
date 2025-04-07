@@ -1,6 +1,7 @@
 package com.example.stockmarketsimulator.modules.portfolio.service;
 
-import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioResponse;
+import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioStockDto;
+import com.example.stockmarketsimulator.modules.portfolio.dto.PortfolioSummaryDto;
 import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
 import com.example.stockmarketsimulator.modules.portfolio.repository.PortfolioRepository;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
@@ -20,33 +21,58 @@ public class PortfolioServiceImpl implements PortfolioService{
     private final PortfolioRepository portfolioRepository;
 
     @Override
-    public List<PortfolioResponse> getUserPortfolio(User user){
+    public PortfolioSummaryDto getUserPortfolio(User user) {
         List<Portfolio> portfolios = portfolioRepository.findByUser(user);
 
-        return portfolios.stream()
-                .map(this::mapToPortfolioResponse)
+        List<PortfolioStockDto> stockDtos = portfolios.stream()
+                .map(this::mapToPortfolioStockDto)
                 .toList();
+
+        BigDecimal totalInvested = BigDecimal.ZERO;
+        BigDecimal currentValue = BigDecimal.ZERO;
+        int totalStocksHeld = 0;
+
+        for (PortfolioStockDto stock : stockDtos) {
+            totalInvested = totalInvested.add(stock.getTotalInvestment());
+            currentValue = currentValue.add(stock.getCurrentValue());
+            totalStocksHeld += stock.getQuantity();
+        }
+
+        BigDecimal totalProfitOrLoss = currentValue.subtract(totalInvested);
+
+        BigDecimal availableBalance = user.getBalance(); // or get from a wallet service
+
+        return PortfolioSummaryDto.builder()
+                .totalInvested(totalInvested)
+                .currentValue(currentValue)
+                .totalProfitOrLoss(totalProfitOrLoss)
+                .availableBalance(availableBalance)
+                .totalStocksHeld(totalStocksHeld)
+                .holdings(stockDtos)
+                .build();
     }
 
-    private PortfolioResponse mapToPortfolioResponse(Portfolio portfolio) {
+    private PortfolioStockDto mapToPortfolioStockDto(Portfolio portfolio) {
         Stock stock = portfolio.getStock();
 
-        // Calculated derived fields
+        BigDecimal totalInvestment = portfolio.getAvgBuyPrice()
+                .multiply(BigDecimal.valueOf(portfolio.getQuantity()));
 
-        BigDecimal totalInvestment = portfolio.getAvgBuyPrice().multiply(BigDecimal.valueOf(portfolio.getQuantity()));
-        BigDecimal currentValue = stock.getCurrentPrice().multiply(BigDecimal.valueOf(portfolio.getQuantity()));
+        BigDecimal currentValue = stock.getCurrentPrice()
+                .multiply(BigDecimal.valueOf(portfolio.getQuantity()));
+
         BigDecimal profitOrLoss = currentValue.subtract(totalInvestment);
 
-        return PortfolioResponse.builder()
+        return PortfolioStockDto.builder()
                 .id(portfolio.getId())
-                .stockSymbol(stock.getSymbol()) // Only the stock symbol
-                .companyName(stock.getCompanyName()) // Only the company name
-                .currentPrice(stock.getCurrentPrice()) // Current price of the stock
-                .quantity(portfolio.getQuantity()) // Number of shares held
-                .avgBuyPrice(portfolio.getAvgBuyPrice()) // Average buy price
-                .totalInvestment(totalInvestment) // Total investment
-                .currentValue(currentValue) // Current value of the holding
-                .profitOrLoss(profitOrLoss) // Profit or loss
+                .stockSymbol(stock.getSymbol())
+                .companyName(stock.getCompanyName())
+                .currentPrice(stock.getCurrentPrice())
+                .quantity(portfolio.getQuantity())
+                .avgBuyPrice(portfolio.getAvgBuyPrice())
+                .totalInvestment(totalInvestment)
+                .currentValue(currentValue)
+                .profitOrLoss(profitOrLoss)
                 .build();
     }
 
@@ -54,7 +80,12 @@ public class PortfolioServiceImpl implements PortfolioService{
     @Override
     public void updatePortfolio(User user, Stock stock, int quantity, BigDecimal buyPrice) {
         Portfolio portfolio = portfolioRepository.findByUserAndStock(user, stock)
-                .orElse(new Portfolio(null, user, stock, 0, BigDecimal.ZERO));
+                .orElse(Portfolio.builder()
+                        .user(user)
+                        .stock(stock)
+                        .quantity(0)
+                        .avgBuyPrice(BigDecimal.ZERO)
+                        .build());
 
         int updatedQuantity = portfolio.getQuantity() + quantity;
 

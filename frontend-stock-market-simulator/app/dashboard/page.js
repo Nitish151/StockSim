@@ -41,6 +41,7 @@ import {
 } from "recharts";
 import { ArrowUpRight, ArrowDownRight, DollarSign, Star, TrendingUp, Activity, Calendar, CircleDollarSign } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
 
 const Dashboard = () => {
   const router = useRouter();
@@ -49,18 +50,21 @@ const Dashboard = () => {
   const [watchlistStocks, setWatchlistStocks] = useState([]);
   const [portfolioPerformance, setPortfolioPerformance] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const {isLoggedIn, loading} = useAuth();
 
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-      return;
+    if (!loading) {
+      // Only redirect if definitely not logged in
+      if (!isLoggedIn) {
+        router.push("/login");
+        return;
+      }
     }
-
+    
     // Fetch dashboard data
     fetchDashboardData();
-  }, [router]);
+  }, [isLoggedIn, router]);
 
   const fetchDashboardData = async () => {
     try {
@@ -76,6 +80,7 @@ const Dashboard = () => {
       setPortfolioData(portfolioData);
       
       // Fetch recent trades
+      //TODO
       const tradesResponse = await fetch("http://localhost:8080/api/trades/recent", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -91,6 +96,7 @@ const Dashboard = () => {
       setWatchlistStocks(watchlistData);
       
       // Fetch portfolio performance
+      //TODO
       const performanceResponse = await fetch("http://localhost:8080/api/portfolio/performance", {
         headers: { Authorization: `Bearer ${token}` },
       });

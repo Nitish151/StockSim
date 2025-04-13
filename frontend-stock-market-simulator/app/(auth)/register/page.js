@@ -3,8 +3,10 @@
 import axios from 'axios';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Register() {
+    const { register } = useAuth();
     const router = useRouter();
     const [formData, setFormData] = useState({
         username: '',
@@ -20,21 +22,15 @@ export default function Register() {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
-        axios.post('http://localhost:8080/api/auth/register', formData)
-        .then((res) => {
-            if(res.status === 201){
-                console.log('User registered successfully:', res.data);
-                router.push('/login');
-            }
-        })
-        .catch((err) => {
-            console.error('Failed to register user:', err);
-        });
-
-
+        const res = await register(formData);
+        if (res.success) {
+        router.push("/login");
+        } else {
+        setError(res.message);
+        }
         console.log('Form data submitted:', formData);
     };
 

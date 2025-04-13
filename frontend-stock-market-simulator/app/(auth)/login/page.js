@@ -2,48 +2,35 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
 const LoginPage = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
 
-    try {
-      axios
-        .post("http://localhost:8080/api/auth/login", { usernameOrEmail, password })
-        .then((res) => {
-          if (res.status === 200) {
-            console.log("User logged in successfully:", res);
-            console.log("Token:", res.data.data.token);
-            localStorage.setItem("token", res.data.data.token);
-            router.push("/home");
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to login user:", err);
-        });
-    } catch (err) {
-      setError(err.message);
+    const response = await login({ usernameOrEmail, password });
+    if (response.success) {
+      router.push("/");
+    } else {
+      setError(response.message);
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form
-        className="bg-white p-6 rounded-lg shadow-lg"
-        onSubmit={handleLogin}
-      >
+      <form className="bg-white p-6 rounded-lg shadow-lg" onSubmit={handleLogin}>
         <h2 className="text-xl font-bold mb-4">Login</h2>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <input
           type="text"
-          placeholder="Username"
+          placeholder="Username or Email"
           value={usernameOrEmail}
           onChange={(e) => setUsernameOrEmail(e.target.value)}
           className="w-full p-2 border rounded mb-2"

@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart } from "recharts";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/context/AuthContext";
 
 const Portfolio = () => {
   const [stocks, setStocks] = useState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { isLoggedIn, user } = useAuth();
   
   useEffect(() => {
     const fetchPortfolio = async () => {

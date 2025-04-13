@@ -5,9 +5,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
-const Navbar = ({ isLoggedIn, handleLogout }) => {
+const Navbar = () => {
   const router = useRouter();
+  const { isLoggedIn, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   return (
@@ -28,7 +30,7 @@ const Navbar = ({ isLoggedIn, handleLogout }) => {
                 <a href="/portfolio" className="text-gray-600 hover:text-blue-600">Portfolio</a>
                 <a href="/watchlist" className="text-gray-600 hover:text-blue-600">Watchlist</a>
                 <a href="/dashboard" className="text-gray-600 hover:text-blue-600">Dashboard</a>
-                <Button onClick={handleLogout} variant="outline" className="ml-4">Logout</Button>
+                <Button onClick={logout} variant="outline" className="ml-4">Logout</Button>
               </>
             ) : (
               <>
@@ -63,7 +65,7 @@ const Navbar = ({ isLoggedIn, handleLogout }) => {
                 <a href="/watchlist" className="block px-3 py-2 text-base font-medium text-gray-600">Watchlist</a>
                 <a href="/dashboard" className="block px-3 py-2 text-base font-medium text-gray-600">Dashboard</a>
                 <button 
-                  onClick={handleLogout}
+                  onClick={logout}
                   className="flex items-center w-full px-3 py-2 text-base font-medium text-red-600"
                 >
                   <LogOut size={18} className="mr-2" /> Logout

@@ -13,29 +13,28 @@ import MarketSummary from "@/components/MarketSummary";
 import UserDashboard from "@/components/UserDashboard";
 import StockTable from "@/components/StockTable";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/context/AuthContext";
 
 const HomePage = () => {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const {isLoggedIn, logout} = useAuth();
   const [trendingStocks, setTrendingStocks] = useState([]);
   const [recommendedStocks, setRecommendedStocks] = useState([]);
   const [marketSummary, setMarketSummary] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
-
     // Fetch trending stocks and market data
     fetchTrendingStocks();
-    fetchMarketSummary();
+    // fetchMarketSummary();
     
     // Fetch recommended stocks if logged in
-    if (token) {
+    if (isLoggedIn) {
       fetchRecommendedStocks();
     }
-  }, []);
+  }, [isLoggedIn]);
+
+  
 
   const fetchTrendingStocks = async () => {
     try {
@@ -100,12 +99,6 @@ const HomePage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-    router.push("/");
-  };
-
   // Mock data for demonstration
   const mockTrendingStocks = [
     { symbol: "AAPL", name: "Apple Inc.", price: 239.51, change: 2.34, changePercent: 0.99 },
@@ -143,7 +136,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout} />
+      <Navbar isLoggedIn={isLoggedIn} handleLogout={logout} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}

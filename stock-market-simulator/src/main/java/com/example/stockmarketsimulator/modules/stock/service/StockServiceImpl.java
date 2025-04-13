@@ -2,6 +2,8 @@ package com.example.stockmarketsimulator.modules.stock.service;
 
 import com.example.stockmarketsimulator.modules.stock.cache.StockCacheService;
 import com.example.stockmarketsimulator.modules.stock.client.YahooFinanceClient;
+import com.example.stockmarketsimulator.modules.stock.dto.NewsDto;
+import com.example.stockmarketsimulator.modules.stock.dto.NewsResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
@@ -101,4 +103,28 @@ public class StockServiceImpl implements StockService {
 
         return searchResponseDto;
     }
+
+    @Override
+    public NewsResponseDto getNews(String tickers, String type) {
+        // First check the cache
+        NewsResponseDto cachedNews = stockCacheService.getCachedNews(tickers, type);
+        if (cachedNews != null) {
+            log.info("Returning cached news for tickers: {} and type: {}", tickers, type);
+            return cachedNews;
+        }
+
+        // If not cached, fetch from external API
+        log.info("Cache miss for news with tickers: {} and type: {}. Fetching from API.", tickers, type);
+        NewsResponseDto newsResponse = yahooFinanceClient.fetchNews(tickers, type);
+
+        if (newsResponse == null) {
+            log.warn("No news data received for tickers: {} and type: {}", tickers, type);
+            return null;
+        }
+
+        // Cache the news response
+        stockCacheService.cacheNews(newsResponse, tickers, type);
+        return newsResponse;
+    }
+
 }

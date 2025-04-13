@@ -43,7 +43,7 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = jwtUtil.generateToken(loginRequest.getUsernameOrEmail());
-            AuthResponseDTO authResponse = new AuthResponseDTO(jwt);
+            AuthResponseDTO authResponse = new AuthResponseDTO(jwt, loginRequest.getUsernameOrEmail());
 
             return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(),"Login successful", authResponse));
         } catch (AuthenticationException ex) {

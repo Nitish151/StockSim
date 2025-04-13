@@ -1,5 +1,7 @@
 package com.example.stockmarketsimulator.modules.stock.controller;
 
+import com.example.stockmarketsimulator.modules.stock.dto.NewsDto;
+import com.example.stockmarketsimulator.modules.stock.dto.NewsResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.service.StockService;
@@ -30,4 +32,17 @@ public class StockDataController {
 
         return ResponseEntity.ok(searchResponseDto);
     }
+
+    @GetMapping("/news")
+    public ResponseEntity<NewsResponseDto> getNews(
+            @RequestParam(required = false) String tickers,
+            @RequestParam(required = false) String type
+    ) {
+        NewsResponseDto news = stockService.getNews(tickers, type);
+        if (news == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(news);
+    }
+
 }

@@ -1,8 +1,6 @@
 package com.example.stockmarketsimulator.modules.stock.client;
 
-import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
-import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
-import com.example.stockmarketsimulator.modules.stock.dto.StockInfo;
+import com.example.stockmarketsimulator.modules.stock.dto.*;
 import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,6 +26,9 @@ public class YahooFinanceClient {
 
     @Value("${yahoo.api.url.search}")
     private String apiUrlSearch;
+
+    @Value("${yahoo.api.url.news}")
+    private String newsUrl;
 
     @Value("${yahoo.api.host}")
     private String apiHost;
@@ -84,6 +85,38 @@ public class YahooFinanceClient {
             log.error("Failed to parse API response for symbol {}: {}", stockName, e.getMessage());
             throw new RuntimeException("Failed to parse API response", e);
         }
-
     }
+
+    public NewsResponseDto fetchNews(String tickers, String type) {
+        if (tickers != null && !tickers.isEmpty()) {
+            newsUrl = newsUrl+"?tickers="+tickers;
+            if (type != null && !type.isEmpty()) {
+                newsUrl = newsUrl+"&type="+type;
+            }
+        } else if (type != null && !type.isEmpty()) {
+            newsUrl = newsUrl+"?type="+type;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("x-rapidapi-host", apiHost);
+        headers.set("x-rapidapi-key", apiKey);
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(newsUrl.toString(), HttpMethod.GET, entity, String.class);
+
+        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+            log.error("API returned invalid response for tickers: {}, type: {}", tickers, type);
+            throw new RuntimeException("API returned invalid response");
+        }
+
+        try {
+            NewsResponseDto newsResponseDto = objectMapper.readValue(response.getBody(), NewsResponseDto.class);
+            return newsResponseDto;
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse API response for tickers: {}, type: {}: {}", tickers, type, e.getMessage());
+            throw new RuntimeException("Failed to parse API response", e);
+        }
+    }
+
 }

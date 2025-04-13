@@ -1,6 +1,1 @@
-Portfolio dto changes
-home 
-dashboard
-news api
-proper navigation
-replace dummy values with the original values
+

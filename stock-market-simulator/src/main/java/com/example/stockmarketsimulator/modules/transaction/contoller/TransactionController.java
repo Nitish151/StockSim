@@ -1,5 +1,8 @@
-package com.example.stockmarketsimulator.modules.transaction.controller;
 
+// TransactionController.java
+package com.example.stockmarketsimulator.modules.transaction.contoller;
+
+import com.example.stockmarketsimulator.modules.transaction.dto.TransactionRequest;
 import com.example.stockmarketsimulator.modules.transaction.dto.TransactionResponse;
 import com.example.stockmarketsimulator.modules.transaction.model.Transaction;
 import com.example.stockmarketsimulator.modules.transaction.service.TransactionService;
@@ -13,7 +16,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -23,53 +25,40 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final UserService userService;
 
-    @PostMapping("/buy")
-    public ResponseEntity<Transaction> buyStock(
-            @AuthenticationPrincipal UserDetails user1, // Inject username/email
-            @RequestParam String stockSymbol,
-            @RequestParam int quantity) {
+    @PostMapping
+    public ResponseEntity<Transaction> createTransaction(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody TransactionRequest request) {
 
-        log.info("here😭");
         // Fetch the user from the repository
-        String username = user1.getUsername();
+        String username = userDetails.getUsername();
         User user = userService.searchUserByUsernameOrEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        log.info("User {} is attempting to buy {} shares of {}", user.getId(), quantity, stockSymbol);
+        log.info("User {} is attempting to {} {} shares of {}",
+                user.getId(),
+                request.getType(),
+                request.getQuantity(),
+                request.getStockSymbol());
 
         try {
-            Transaction transaction = transactionService.buyStock(user.getId(), stockSymbol, quantity);
+            Transaction transaction = transactionService.executeTransaction(
+                    user.getId(),
+                    request.getStockSymbol(),
+                    request.getQuantity(),
+                    request.getType());
+
             return ResponseEntity.ok(transaction);
         } catch (Exception e) {
-            log.error("Error processing buy transaction: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PostMapping("/sell")
-    public ResponseEntity<Transaction> sellStock(
-            @AuthenticationPrincipal UserDetails user1,
-            @RequestParam String stockSymbol,
-            @RequestParam int quantity) {
-        String username = user1.getUsername();
-        User user = userService.searchUserByUsernameOrEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        log.info("✅ User {} is attempting to sell {} shares of {}", user.getId(), quantity, stockSymbol);
-
-        try {
-            Transaction transaction = transactionService.sellStock(user.getId(), stockSymbol, quantity);
-            return ResponseEntity.ok(transaction);
-        } catch (Exception e) {
-            log.error("Error processing sell transaction: {}", e.getMessage());
+            log.error("Error processing {} transaction: {}", request.getType(), e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }
 
     @GetMapping("/history")
     public ResponseEntity<List<TransactionResponse>> getUserTransactions(
-            @AuthenticationPrincipal UserDetails user1) {
-        String username = user1.getUsername();
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String username = userDetails.getUsername();
         User user = userService.searchUserByUsernameOrEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

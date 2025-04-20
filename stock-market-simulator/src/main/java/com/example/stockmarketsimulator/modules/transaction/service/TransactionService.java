@@ -1,3 +1,4 @@
+// TransactionService.java
 package com.example.stockmarketsimulator.modules.transaction.service;
 
 import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
@@ -30,8 +31,8 @@ public class TransactionService {
     private final PortfolioService portfolioService;
 
     @Transactional
-    public Transaction buyStock(Long userId, String stockSymbol, int quantity) {
-        log.info("Processing buy order: User {} buying {} shares of {}", userId, quantity, stockSymbol);
+    public Transaction executeTransaction(Long userId, String stockSymbol, int quantity, TransactionType type) {
+        log.info("Processing {} order: User {} for {} shares of {}", type, userId, quantity, stockSymbol);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
@@ -39,60 +40,51 @@ public class TransactionService {
                     return new EntityNotFoundException("User not found");
                 });
 
-        // Fetch and persist the stock using the new StockService
+        // Fetch and persist the stock
         Stock stock = stockService.getAndPersistStock(stockSymbol);
 
+        switch (type) {
+            case BUY:
+                return processBuyTransaction(user, stock, quantity);
+            case SELL:
+                return processSellTransaction(user, stock, quantity);
+            default:
+                throw new IllegalArgumentException("Unsupported transaction type: " + type);
+        }
+    }
+
+    private Transaction processBuyTransaction(User user, Stock stock, int quantity) {
         BigDecimal totalCost = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
 
         if (user.getBalance().compareTo(totalCost) < 0) {
-            log.error("Insufficient balance: User {} has {}, needs {}", userId, user.getBalance(), totalCost);
+            log.error("Insufficient balance: User {} has {}, needs {}",
+                    user.getId(), user.getBalance(), totalCost);
             throw new IllegalArgumentException("Insufficient balance to buy stock");
         }
 
         user.setBalance(user.getBalance().subtract(totalCost));
         userRepository.save(user);
-        log.info("User {} balance updated: {}", userId, user.getBalance());
+        log.info("User {} balance updated: {}", user.getId(), user.getBalance());
 
-        Transaction transaction = new Transaction();
-        transaction.setUser(user);
-        transaction.setStock(stock);
-        transaction.setType(TransactionType.BUY);
-        transaction.setPrice(stock.getCurrentPrice());
-        transaction.setTotalPrice(totalCost);
-        transaction.setQuantity(quantity);
-        transaction.setTimestamp(LocalDateTime.now());
-
-        transactionRepository.save(transaction);
-        log.info("Transaction saved: User {} bought {} shares of {}", userId, quantity, stockSymbol);
+        Transaction transaction = createTransaction(user, stock, TransactionType.BUY,
+                stock.getCurrentPrice(), totalCost, quantity, BigDecimal.ZERO);
 
         portfolioService.updatePortfolio(user, stock, quantity, stock.getCurrentPrice());
-        log.info("Portfolio updated for user {}", userId);
+        log.info("Portfolio updated for user {}", user.getId());
 
         return transaction;
     }
 
-    @Transactional
-    public Transaction sellStock(Long userId, String stockSymbol, int quantity) {
-        log.info("Processing sell order: User {} selling {} shares of {}", userId, quantity, stockSymbol);
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("User not found: {}", userId);
-                    return new EntityNotFoundException("User not found");
-                });
-
-        // Fetch and persist the stock using the new StockService
-        Stock stock = stockService.getAndPersistStock(stockSymbol);
-
+    private Transaction processSellTransaction(User user, Stock stock, int quantity) {
         Portfolio portfolio = portfolioService.findByUserAndStock(user, stock)
                 .orElseThrow(() -> {
-                    log.error("User {} does not own stock {}", userId, stockSymbol);
+                    log.error("User {} does not own stock {}", user.getId(), stock.getSymbol());
                     return new IllegalArgumentException("User does not own this stock");
                 });
 
         if (portfolio.getQuantity() < quantity) {
             log.error("Insufficient shares: User {} has {} shares of {}, trying to sell {}",
-                    userId, portfolio.getQuantity(), stockSymbol, quantity);
+                    user.getId(), portfolio.getQuantity(), stock.getSymbol(), quantity);
             throw new IllegalArgumentException("Insufficient shares to sell");
         }
 
@@ -100,24 +92,48 @@ public class TransactionService {
 
         user.setBalance(user.getBalance().add(totalEarnings));
         userRepository.save(user);
-        log.info("User {} balance updated: {}", userId, user.getBalance());
+        log.info("User {} balance updated: {}", user.getId(), user.getBalance());
+        BigDecimal avgBuyPrice = portfolio.getAvgBuyPrice();
+        BigDecimal sellPrice = stock.getCurrentPrice();
+        BigDecimal profitPerShare = sellPrice.subtract(avgBuyPrice);
+        BigDecimal totalProfit = profitPerShare.multiply(BigDecimal.valueOf(quantity));
 
+        Transaction transaction = createTransaction(user, stock, TransactionType.SELL,
+                sellPrice, totalEarnings, quantity, totalProfit);
+
+
+
+        portfolioService.updatePortfolio(user, stock, -quantity, stock.getCurrentPrice());
+        log.info("Portfolio updated for user {}", user.getId());
+
+        return transaction;
+    }
+
+    private Transaction createTransaction(User user, Stock stock, TransactionType type,
+                                          BigDecimal price, BigDecimal totalPrice,
+                                          int quantity, BigDecimal profitOrLoss) {
         Transaction transaction = new Transaction();
         transaction.setUser(user);
         transaction.setStock(stock);
-        transaction.setType(TransactionType.SELL);
-        transaction.setPrice(stock.getCurrentPrice());
-        transaction.setTotalPrice(totalEarnings);
+        transaction.setType(type);
+        transaction.setPrice(price);
+        transaction.setTotalPrice(totalPrice);
         transaction.setQuantity(quantity);
         transaction.setTimestamp(LocalDateTime.now());
+        if (type == TransactionType.SELL && (profitOrLoss != null || profitOrLoss != BigDecimal.ZERO)) {
+            transaction.setProfitOrLoss(profitOrLoss);
+        }
+        return transactionRepository.save(transaction);
+    }
 
-        transactionRepository.save(transaction);
-        log.info("Transaction saved: User {} sold {} shares of {}", userId, quantity, stockSymbol);
+    public List<TransactionResponse> getUserTransactions(Long userId) {
+        log.info("Fetching transactions for user {}", userId);
+        List<Transaction> transactions = transactionRepository.findByUserId(userId);
 
-        portfolioService.updatePortfolio(user, stock, -quantity, stock.getCurrentPrice());
-        log.info("Portfolio updated for user {}", userId);
-
-        return transaction;
+        // Map Transaction entities to TransactionResponse DTOs
+        return transactions.stream()
+                .map(this::mapToTransactionResponse)
+                .toList();
     }
 
     private TransactionResponse mapToTransactionResponse(Transaction transaction) {
@@ -131,15 +147,5 @@ public class TransactionService {
                 .quantity(transaction.getQuantity())
                 .timestamp(transaction.getTimestamp())
                 .build();
-    }
-
-    public List<TransactionResponse> getUserTransactions(Long userId) {
-        log.info("Fetching transactions for user {}", userId);
-        List<Transaction> transactions = transactionRepository.findByUserId(userId);
-
-        // Map Transaction entities to TransactionResponse DTOs
-        return transactions.stream()
-                .map(this::mapToTransactionResponse)
-                .toList();
     }
 }

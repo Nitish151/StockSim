@@ -39,6 +39,10 @@ public class Transaction {
     public enum TransactionType {
         BUY, SELL;
     }
+
+    @Column(name = "profit_or_loss")
+    private BigDecimal profitOrLoss;  // This is only relevant for SELL transactions
+
 }
 
 

@@ -179,29 +179,45 @@ const StockDetailPage = ({ params }) => {
 
     try {
       const token = localStorage.getItem("token");
-      await fetch("http://localhost:8080/api/trades", {
+
+      // Prepare request body with unified transaction structure
+      const requestBody = {
+        stockSymbol: stockSymbol,
+        quantity: parseInt(quantity),
+        type: tradeType.toUpperCase(), // 'BUY' or 'SELL'
+        orderType: orderType.toUpperCase(), // 'MARKET' or 'LIMIT' for future expansion
+      };
+
+      // Add limitPrice only for limit orders
+      if (orderType === "limit") {
+        requestBody.limitPrice = parseFloat(limitPrice);
+      }
+
+      const response = await fetch("http://localhost:8080/api/transactions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          symbol: stockSymbol,
-          type: tradeType.toUpperCase(),
-          quantity: parseInt(quantity),
-          orderType: orderType,
-          limitPrice: orderType === "limit" ? parseFloat(limitPrice) : null,
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Transaction failed");
+      }
+
+      const result = await response.json();
 
       alert(
         `${tradeType.toUpperCase()} order for ${quantity} shares of ${stockSymbol} placed successfully!`
       );
+
       setQuantity(1);
       setLimitPrice("");
     } catch (error) {
       console.error("Error placing trade:", error);
-      alert("Failed to place trade. Please try again.");
+      alert(`Failed to place trade: ${error.message}`);
     }
   };
 

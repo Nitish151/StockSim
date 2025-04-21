@@ -41,6 +41,9 @@ public class User {
     @Column
     private BigDecimal balance = BigDecimal.valueOf(0.0);
 
+    @Column(name = "reserved_balance")
+    private BigDecimal reservedBalance = BigDecimal.ZERO;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))

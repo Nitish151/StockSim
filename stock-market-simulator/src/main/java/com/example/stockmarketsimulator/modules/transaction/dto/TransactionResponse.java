@@ -17,6 +17,8 @@ public class TransactionResponse {
     private TransactionType type;
     private BigDecimal price;
     private BigDecimal totalPrice;
+    private String orderType;
+    private String profitOrLoss;
     private int quantity;
     private LocalDateTime timestamp;
 }

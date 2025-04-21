@@ -2,19 +2,22 @@ package com.example.stockmarketsimulator.modules.stock.service;
 
 import com.example.stockmarketsimulator.modules.stock.cache.StockCacheService;
 import com.example.stockmarketsimulator.modules.stock.client.YahooFinanceClient;
-import com.example.stockmarketsimulator.modules.stock.dto.NewsDto;
 import com.example.stockmarketsimulator.modules.stock.dto.NewsResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.mapper.StockMapper;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
 import com.example.stockmarketsimulator.modules.stock.repository.StockRepository;
+import com.example.stockmarketsimulator.modules.transaction.model.LimitOrder;
+import com.example.stockmarketsimulator.modules.transaction.repository.LimitOrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,8 @@ public class StockServiceImpl implements StockService {
     private final StockCacheService stockCacheService;
     private final StockRepository stockRepository;
     private final StockMapper stockMapper;
+    private final LimitOrderRepository limitOrderRepository;
+
 
     @Override
     public StockDto getStockData(String symbol) {
@@ -125,6 +130,41 @@ public class StockServiceImpl implements StockService {
         // Cache the news response
         stockCacheService.cacheNews(newsResponse, tickers, type);
         return newsResponse;
+    }
+
+    @Override
+    public Optional<Stock> findById(Long id){
+        return stockRepository.findById(id);
+
+    }
+
+    @Override
+    public List<Stock> getStocksWithPendingLimitOrders() {
+        // Find all stocks that have pending limit orders
+        List<Long> stockIdsWithPendingOrders = limitOrderRepository.findByStatus(LimitOrder.LimitOrderStatus.PENDING)
+                .stream()
+                .map(order -> order.getStock().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        return stockRepository.findAllById(stockIdsWithPendingOrders);
+    }
+
+    @Override
+    public Stock refreshStockPrice(String symbol) {
+        log.info("Refreshing stock price for {}", symbol);
+
+        // Fetch the latest data from the external API
+        StockDto stockDto = yahooFinanceClient.fetchStockData(symbol);
+
+        // Update cache with new data
+        stockCacheService.cacheStock(symbol, stockDto);
+
+        // Update database and return the updated stock
+        Stock updatedStock = saveOrUpdateStock(stockDto);
+
+        log.info("Refreshed price for {}: {}", symbol, updatedStock.getCurrentPrice());
+        return updatedStock;
     }
 
 }

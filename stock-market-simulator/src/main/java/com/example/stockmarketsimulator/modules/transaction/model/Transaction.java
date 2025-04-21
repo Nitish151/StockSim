@@ -30,6 +30,9 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     private TransactionType type; // BUY or SELL
 
+    @Enumerated(EnumType.STRING)
+    private OrderType orderType;
+
     private BigDecimal price; // Price at which transaction happened
     private BigDecimal totalPrice = BigDecimal.valueOf(0.0); // Total price of the transaction
     private int quantity; // Number of stocks traded
@@ -40,8 +43,13 @@ public class Transaction {
         BUY, SELL;
     }
 
+    public enum OrderType{
+        MARKET, LIMIT;
+    }
+
     @Column(name = "profit_or_loss")
     private BigDecimal profitOrLoss;  // This is only relevant for SELL transactions
+
 
 }
 

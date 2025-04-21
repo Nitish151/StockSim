@@ -1,4 +1,3 @@
-// TransactionService.java
 package com.example.stockmarketsimulator.modules.transaction.service;
 
 import com.example.stockmarketsimulator.modules.portfolio.model.Portfolio;
@@ -32,7 +31,7 @@ public class TransactionService {
 
     @Transactional
     public Transaction executeTransaction(Long userId, String stockSymbol, int quantity, TransactionType type) {
-        log.info("Processing {} order: User {} for {} shares of {}", type, userId, quantity, stockSymbol);
+        log.info("Processing {} market order: User {} for {} shares of {}", type, userId, quantity, stockSymbol);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> {
@@ -43,39 +42,71 @@ public class TransactionService {
         // Fetch and persist the stock
         Stock stock = stockService.getAndPersistStock(stockSymbol);
 
+        return executeTransactionWithOrderType(
+                userId,
+                stock.getId(),
+                quantity,
+                type,
+                Transaction.OrderType.MARKET,
+                stock.getCurrentPrice()
+        );
+    }
+
+    @Transactional
+    public Transaction executeTransactionWithOrderType(Long userId, Long stockId, int quantity,
+                                                       TransactionType type, Transaction.OrderType orderType,
+                                                       BigDecimal executionPrice) {
+        log.info("Processing {} {} order: User {} for {} shares at price {}",
+                type, orderType, userId, quantity, executionPrice);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("User not found: {}", userId);
+                    return new EntityNotFoundException("User not found");
+                });
+
+        Stock stock = stockService.findById(stockId)
+                .orElseThrow(() -> {
+                    log.error("Stock not found: {}", stockId);
+                    return new EntityNotFoundException("Stock not found");
+                });
+
         switch (type) {
             case BUY:
-                return processBuyTransaction(user, stock, quantity);
+                return processBuyTransaction(user, stock, quantity, executionPrice, orderType);
             case SELL:
-                return processSellTransaction(user, stock, quantity);
+                return processSellTransaction(user, stock, quantity, executionPrice, orderType);
             default:
                 throw new IllegalArgumentException("Unsupported transaction type: " + type);
         }
     }
 
-    private Transaction processBuyTransaction(User user, Stock stock, int quantity) {
-        BigDecimal totalCost = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
+    private Transaction processBuyTransaction(User user, Stock stock, int quantity, BigDecimal executionPrice, Transaction.OrderType orderType) {
+        BigDecimal totalCost = executionPrice.multiply(BigDecimal.valueOf(quantity));
 
-        if (user.getBalance().compareTo(totalCost) < 0) {
-            log.error("Insufficient balance: User {} has {}, needs {}",
-                    user.getId(), user.getBalance(), totalCost);
-            throw new IllegalArgumentException("Insufficient balance to buy stock");
+        // For market orders, check balance. For limit orders, funds are already reserved
+        if (orderType == Transaction.OrderType.MARKET) {
+            if (user.getBalance().compareTo(totalCost) < 0) {
+                log.error("Insufficient balance: User {} has {}, needs {}",
+                        user.getId(), user.getBalance(), totalCost);
+                throw new IllegalArgumentException("Insufficient balance to buy stock");
+            }
+
+            user.setBalance(user.getBalance().subtract(totalCost));
+            userRepository.save(user);
+            log.info("User {} balance updated: {}", user.getId(), user.getBalance());
         }
 
-        user.setBalance(user.getBalance().subtract(totalCost));
-        userRepository.save(user);
-        log.info("User {} balance updated: {}", user.getId(), user.getBalance());
-
         Transaction transaction = createTransaction(user, stock, TransactionType.BUY,
-                stock.getCurrentPrice(), totalCost, quantity, BigDecimal.ZERO);
+                executionPrice, totalCost, quantity, BigDecimal.ZERO, orderType);
 
-        portfolioService.updatePortfolio(user, stock, quantity, stock.getCurrentPrice());
+        portfolioService.updatePortfolio(user, stock, quantity, executionPrice);
         log.info("Portfolio updated for user {}", user.getId());
 
         return transaction;
     }
 
-    private Transaction processSellTransaction(User user, Stock stock, int quantity) {
+    private Transaction processSellTransaction(User user, Stock stock, int quantity, BigDecimal executionPrice, Transaction.OrderType orderType) {
         Portfolio portfolio = portfolioService.findByUserAndStock(user, stock)
                 .orElseThrow(() -> {
                     log.error("User {} does not own stock {}", user.getId(), stock.getSymbol());
@@ -88,22 +119,20 @@ public class TransactionService {
             throw new IllegalArgumentException("Insufficient shares to sell");
         }
 
-        BigDecimal totalEarnings = stock.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
+        BigDecimal totalEarnings = executionPrice.multiply(BigDecimal.valueOf(quantity));
 
         user.setBalance(user.getBalance().add(totalEarnings));
         userRepository.save(user);
         log.info("User {} balance updated: {}", user.getId(), user.getBalance());
+
         BigDecimal avgBuyPrice = portfolio.getAvgBuyPrice();
-        BigDecimal sellPrice = stock.getCurrentPrice();
-        BigDecimal profitPerShare = sellPrice.subtract(avgBuyPrice);
+        BigDecimal profitPerShare = executionPrice.subtract(avgBuyPrice);
         BigDecimal totalProfit = profitPerShare.multiply(BigDecimal.valueOf(quantity));
 
         Transaction transaction = createTransaction(user, stock, TransactionType.SELL,
-                sellPrice, totalEarnings, quantity, totalProfit);
+                executionPrice, totalEarnings, quantity, totalProfit, orderType);
 
-
-
-        portfolioService.updatePortfolio(user, stock, -quantity, stock.getCurrentPrice());
+        portfolioService.updatePortfolio(user, stock, -quantity, executionPrice);
         log.info("Portfolio updated for user {}", user.getId());
 
         return transaction;
@@ -111,16 +140,18 @@ public class TransactionService {
 
     private Transaction createTransaction(User user, Stock stock, TransactionType type,
                                           BigDecimal price, BigDecimal totalPrice,
-                                          int quantity, BigDecimal profitOrLoss) {
+                                          int quantity, BigDecimal profitOrLoss,
+                                          Transaction.OrderType orderType) {
         Transaction transaction = new Transaction();
         transaction.setUser(user);
         transaction.setStock(stock);
         transaction.setType(type);
+        transaction.setOrderType(orderType);
         transaction.setPrice(price);
         transaction.setTotalPrice(totalPrice);
         transaction.setQuantity(quantity);
         transaction.setTimestamp(LocalDateTime.now());
-        if (type == TransactionType.SELL && (profitOrLoss != null || profitOrLoss != BigDecimal.ZERO)) {
+        if (type == TransactionType.SELL && (profitOrLoss != null && profitOrLoss.compareTo(BigDecimal.ZERO) != 0)) {
             transaction.setProfitOrLoss(profitOrLoss);
         }
         return transactionRepository.save(transaction);
@@ -142,10 +173,25 @@ public class TransactionService {
                 .stockSymbol(transaction.getStock().getSymbol())
                 .companyName(transaction.getStock().getCompanyName())
                 .type(transaction.getType())
+                .orderType(String.valueOf(transaction.getOrderType()))
                 .price(transaction.getPrice())
                 .totalPrice(transaction.getTotalPrice())
                 .quantity(transaction.getQuantity())
                 .timestamp(transaction.getTimestamp())
+                .profitOrLoss(String.valueOf(transaction.getProfitOrLoss()))
                 .build();
+    }
+
+    // Helper method for limit order validation
+    public boolean userHasEnoughShares(Long userId, Long stockId, int quantity) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Stock stock = stockService.findById(stockId)
+                .orElseThrow(() -> new EntityNotFoundException("Stock not found"));
+
+        return portfolioService.findByUserAndStock(user, stock)
+                .map(portfolio -> portfolio.getQuantity() >= quantity)
+                .orElse(false);
     }
 }

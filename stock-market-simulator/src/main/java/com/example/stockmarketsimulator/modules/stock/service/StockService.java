@@ -1,10 +1,12 @@
 package com.example.stockmarketsimulator.modules.stock.service;
 
-import com.example.stockmarketsimulator.modules.stock.dto.NewsDto;
 import com.example.stockmarketsimulator.modules.stock.dto.NewsResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.SearchResponseDto;
 import com.example.stockmarketsimulator.modules.stock.dto.StockDto;
 import com.example.stockmarketsimulator.modules.stock.model.Stock;
+
+import java.util.List;
+import java.util.Optional;
 
 public interface StockService {
     /**
@@ -21,4 +23,10 @@ public interface StockService {
     SearchResponseDto searchStocksByName(String stockName);
 
     NewsResponseDto getNews(String tickers, String type);
+
+    Optional<Stock> findById(Long id);
+
+    List<Stock> getStocksWithPendingLimitOrders();
+
+    Stock refreshStockPrice(String symbol);
 }

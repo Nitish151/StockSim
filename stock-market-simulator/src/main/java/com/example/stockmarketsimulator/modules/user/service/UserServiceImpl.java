@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +27,36 @@ public class UserServiceImpl implements UserService{
 //        this.userRepository = userRepository;
 //        this.passwordEncoder = passwordEncoder;
 //    }
+
+    @Override
+    public void deposit(String username, BigDecimal amount) {
+        User user = getUserOrThrow(username);
+        user.setBalance(user.getBalance().add(amount));
+        userRepository.save(user);
+    }
+
+    @Override
+    public boolean withdraw(String username, BigDecimal amount) {
+        User user = getUserOrThrow(username);
+        if (user.getBalance().compareTo(amount) < 0) return false;
+
+        user.setBalance(user.getBalance().subtract(amount));
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public BigDecimal getUserBalance(String username) {
+        return getUserOrThrow(username).getBalance();
+    }
+
+    @Override
+    public User getUserOrThrow(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+    }
+
+
 
     @Override
     public User createUser(User user) {

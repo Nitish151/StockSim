@@ -1,6 +1,6 @@
 
 // TransactionController.java
-package com.example.stockmarketsimulator.modules.transaction.contoller;
+package com.example.stockmarketsimulator.modules.transaction.controller;
 
 import com.example.stockmarketsimulator.modules.transaction.dto.TransactionRequest;
 import com.example.stockmarketsimulator.modules.transaction.dto.TransactionResponse;

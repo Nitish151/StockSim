@@ -1,0 +1,2 @@
+--ALTER TABLE users
+--ADD COLUMN reserved_balance DECIMAL(19, 2) DEFAULT 0.00;
